@@ -1,5 +1,5 @@
 {
-  description = ''Logging library with support for async IO, multithreading, Journald.'';
+  description = ''Logging helpers'';
 
   inputs.flakeNimbleLib.owner = "riinr";
   inputs.flakeNimbleLib.ref   = "master";
@@ -12,6 +12,14 @@
   inputs.src-morelogging-master.owner = "FedericoCeratto";
   inputs.src-morelogging-master.repo  = "nim-morelogging";
   inputs.src-morelogging-master.type  = "github";
+  
+  inputs."zip".owner = "nim-nix-pkgs";
+  inputs."zip".ref   = "master";
+  inputs."zip".repo  = "zip";
+  inputs."zip".dir   = "0_3_1";
+  inputs."zip".type  = "github";
+  inputs."zip".inputs.nixpkgs.follows = "nixpkgs";
+  inputs."zip".inputs.flakeNimbleLib.follows = "flakeNimbleLib";
   
   outputs = { self, nixpkgs, flakeNimbleLib, ...}@deps:
   let 
