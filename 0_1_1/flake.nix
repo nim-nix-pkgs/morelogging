@@ -11,7 +11,6 @@
   inputs.src-morelogging-0_1_1.ref   = "refs/tags/0.1.1";
   inputs.src-morelogging-0_1_1.owner = "FedericoCeratto";
   inputs.src-morelogging-0_1_1.repo  = "nim-morelogging";
-  inputs.src-morelogging-0_1_1.dir   = "";
   inputs.src-morelogging-0_1_1.type  = "github";
   
   inputs."zip".owner = "nim-nix-pkgs";
