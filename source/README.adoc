@@ -1,0 +1,173 @@
+== Morelogging
+
+A set of logging utilities for Nim.
+
+image:https://img.shields.io/badge/status-beta-orange.svg[badge]
+image:https://circleci.com/gh/FedericoCeratto/nim-morelogging.svg?style=svg["CircleCI", link="https://circleci.com/gh/FedericoCeratto/nim-morelogging"]
+image:https://ci.appveyor.com/api/projects/status/github/FedericoCeratto/nim-morelogging?svg=true[Appveyor, link="https://ci.appveyor.com/project/FedericoCeratto/nim-morelogging"]
+image:https://img.shields.io/github/tag/FedericoCeratto/nim-morelogging.svg[tags]
+image:https://img.shields.io/badge/License-LGPL%20v3-blue.svg[License]
+
+.Features:
+[none]
+- [x] File rotation
+- [x] Compression
+- [x] Templated log file name
+- [x] Templated log messages
+- [x] Threaded log buffering
+- [x] Async log buffering
+- [x] Logging, file rotation and compression do not block the caller
+- [x] Sensible defaults: log to "<appname>.<date>.log", daily log rotation
+- [x] Log to systemd Journald. Support structured entries.
+- [x] Support Linux, OSX, Windows
+- [x] Functional-tested
+
+.Roadmap:
+- [ ] Logging hierarchy
+- [ ] Do not crash the application on write failure (e.g. broken or full disk, permission errors) - switch to logging to stderr
+- [ ] Rotate logfile on SIGHUP signal
+- [ ] Structured logging and optional fields
+
+.Installation
+[source,bash]
+----
+$ # install Nim using APT or from the upstream website
+$ sudo apt-get install nim
+$ # install nimble and then:
+$ nimble install morelogging
+----
+
+.Usage
+[source,nim]
+----
+import morelogging as log
+
+let log = newAsyncFileLogger()
+log.debug("debug")
+log.info("info")
+log.warn("warn")
+log.error("error")
+log.fatal("fatal")
+----
+
+
+=== Log message formatting
+
+The following formatters are supported:
+
+  $date
+  $time
+  $datetime
+  $app
+  $appdir
+  $appname
+  $levelid
+  $levelname
+
+Messages with level below level_threshold are ignored.
+
+=== Async and threaded loggers
+
+If buffer_size is positive, messages are buffered internally up to writeout_interval_ms
+
+Messages with level >= flush_threshold are flushed out immediately.
+
+[source,nim]
+----
+proc newAsyncFileLogger*(
+    filename_tpl = "$app.$y$MM$dd.log",
+    flush_threshold = lvlError,
+    fmtStr = "$datetime $levelname ",
+    level_threshold = lvlAll,
+    mode: FileMode = fmAppend,
+    writeout_interval_ms = 100,
+    buffer_size = 1_048_576
+  ): AsyncFileLogger =
+
+proc newThreadFileLogger*(
+    filename_tpl = "$app.$y$MM$dd.log",
+    fmtStr = "$datetime $levelname ",
+    level_threshold = lvlAll,
+    mode: FileMode = fmAppend,
+    writeout_interval_ms = 100,
+  ): ThreadFileLogger =
+
+proc newThreadRotatingFileLogger*(
+    compress = false,
+    filename_tpl = "$app.$y$MM$dd.log",
+    fmtStr = "$datetime $levelname ",
+    level_threshold = lvlAll,
+    mode: FileMode = fmAppend,
+    rotate_interval = "1d",
+    writeout_interval_ms = 100,
+  ): ThreadRotatingFileLogger
+----
+
+==== Generating log file names dynamically
+
+Filenames are generated from filename_tpl
+Default value: "$app.$y$MM$dd.log"
+The following formatters are supported:
+
+  $y         year
+  $MM        month
+  $dd        day
+  $hh        hour
+  $mm        minute
+  $ss        second
+  $hostname  hostname
+  $appname   application name
+
+=== Systemd's Journald logger (recommended)
+
+Journald supports logging user-defined key-value pairs and provides fast indexing.
+
+Enable with -d:systemd
+
+.Usage:
+[source,nim]
+----
+let log = newJournaldLogger()
+log.info("hello world", {"key_1": "value_1"})
+----
+
+Keys are converted to uppercase. They can contain underscores but not as the first character.
+
+JournaldLogger will automatically add CODE_FILE, CODE_FUNC, CODE_LINE keys to show the filename, function and line number that generated the log message.
+
+Note: '--stackTrace:on' and '--lineTrace:on' are required when building in release mode to enable this feature.
+
+
+You can override them by passing the keys in uppercase with your own values.
+
+
+.Output example:
+[source,bash]
+----
+sudo journalctl -e -o json-pretty KEY_1=value_1 -n1 --no-pager
+{
+  "PRIORITY" : "5",
+  "_TRANSPORT" : "journal",
+  "_UID" : "1000",
+  "_GID" : "1000",
+  "MESSAGE" : "hello world",
+  "KEY_1" : "value_1",
+  "CODE_FUNC" : "myfunction",
+  "CODE_FILE" : "mytest.nim",
+  "CODE_LINE" : "24",
+  < other lines redacted >
+  < ... >
+}
+----
+
+=== Stdout logger
+
+Useful mostly for debugging.
+
+.Usage:
+[source,nim]
+----
+import morelogging
+let log = newStdoutLogger(fmtStr="$time ")
+log.info("hello world")
+----
